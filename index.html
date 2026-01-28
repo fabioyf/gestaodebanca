@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Banca - Pro Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        #bloqueio { position: fixed; inset: 0; background: #0a0a0a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+        #conteudo { display: none; }
+        input[type="password"] { background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 8px; text-align: center; outline: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-5 font-sans">
+
+    <div id="bloqueio">
+        <h1 class="text-3xl font-bold text-green-500 mb-6 uppercase tracking-widest">Acesso Restrito</h1>
+        <input type="password" id="senhaInput" placeholder="DIGITE SEU PIN">
+        <button onclick="verificarSenha()" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded transition">ENTRAR</button>
+    </div>
+
+    <div id="conteudo" class="max-w-5xl mx-auto">
+        <div class="flex flex-wrap justify-between items-center mb-6 border-b border-gray-700 pb-4 gap-4">
+            <h1 class="text-3xl font-bold text-green-500 flex items-center gap-2">💰 Minha Banca Cloud</h1>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="exportarBackup()" class="text-[10px] bg-blue-900/30 hover:bg-blue-800 text-blue-400 px-3 py-1 rounded border border-blue-800 transition uppercase font-bold">Exportar PC</button>
+                <button onclick="limparTudo()" class="text-[10px] bg-red-900/20 hover:bg-red-900 text-red-400 px-3 py-1 rounded transition uppercase font-bold">Resetar Nuvem</button>
+            </div>
+        </div>
+
+        <div class="mb-8 bg-gray-800 p-5 rounded-lg flex flex-wrap items-center justify-between gap-4 border border-gray-700 shadow-lg">
+            <div class="flex items-center gap-4">
+                <span class="text-gray-400 font-bold uppercase text-xs">Período:</span>
+                <select id="filtroMesAno" onchange="carregarDados()" class="bg-gray-700 p-2 rounded outline-none text-white focus:ring-2 ring-blue-500 cursor-pointer text-sm">
+                    <option value="todos">Todos os Meses</option>
+                </select>
+            </div>
+            
+            <div id="areaPagamento" class="hidden flex items-center gap-4 bg-gray-900/50 p-2 rounded-lg border border-gray-600">
+                <span id="statusTexto" class="text-xs font-bold uppercase"></span>
+                <button id="btnPagarMes" onclick="alternarPagamentoMes()" class="px-4 py-1 rounded text-xs font-bold transition"></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-gray-800 p-4 rounded-lg shadow border-l-4 border-blue-500">
+                <p class="text-gray-400 text-xs uppercase font-bold tracking-wider">Movimentação</p>
+                <p id="totalMovimento" class="text-2xl font-bold text-blue-400 font-mono">R$ 0,00</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg shadow border-l-4 border-green-500">
+                <p class="text-gray-400 text-xs uppercase font-bold tracking-wider">Lucro Líquido</p>
+                <p id="totalLucro" class="text-2xl font-bold text-green-400 font-mono">R$ 0,00</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg shadow border-l-4 border-red-500">
+                <p id="labelImposto" class="text-gray-400 text-xs uppercase font-bold tracking-wider">Imposto (15%)</p>
+                <p id="totalImposto" class="text-2xl font-bold text-red-400 font-mono">R$ 0,00</p>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg mb-8 shadow-2xl border border-gray-700">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input type="date" id="data" class="bg-gray-700 p-2 rounded outline-none focus:ring-2 ring-green-500 text-white">
+                <input type="number" id="deposito" placeholder="Depósito (R$)" class="bg-gray-700 p-2 rounded outline-none text-white">
+                <input type="number" id="saque" placeholder="Saque (R$)" class="bg-gray-700 p-2 rounded outline-none text-white">
+                <button onclick="salvarOperacao()" class="bg-green-600 hover:bg-green-700 font-bold py-2 rounded transition shadow-lg text-white uppercase text-sm">Lançar</button>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 shadow-xl">
+            <table class="w-full text-left">
+                <thead class="bg-gray-700 text-gray-400 text-xs uppercase">
+                    <tr>
+                        <th class="p-4">Data</th>
+                        <th class="p-4 text-center">Depósito</th>
+                        <th class="p-4 text-center">Saque</th>
+                        <th class="p-4 text-right">Resultado</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaCorpo" class="divide-y divide-gray-700 text-sm">
+                    <tr><td colspan="4" class="p-10 text-center text-gray-500">Conectando ao banco de dados...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO IGUAL AO SEU OUTRO PROJETO
+        const SENHA_ACESSO = "2323";
+        const firebaseConfig = { 
+            databaseURL: "https://gestaobanca-547df-default-rtdb.firebaseio.com/" 
+        };
+
+        // INICIALIZAÇÃO
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function verificarSenha() {
+            if (document.getElementById("senhaInput").value === SENHA_ACESSO) {
+                document.getElementById("bloqueio").style.display = "none";
+                document.getElementById("conteudo").style.display = "block";
+                iniciarSincronizacao();
+            } else {
+                alert("PIN INCORRETO!");
+            }
+        }
+
+        function iniciarSincronizacao() {
+            // Escuta mudanças no banco e atualiza a tela na hora
+            db.ref("/").on("value", () => {
+                atualizarFiltros();
+                carregarDados();
+            });
+        }
+
+        function salvarOperacao() {
+            const dataInput = document.getElementById('data').value;
+            const deposito = parseFloat(document.getElementById('deposito').value) || 0;
+            const saque = parseFloat(document.getElementById('saque').value) || 0;
+            
+            if(!dataInput) return alert("Selecione a data!");
+
+            // Salva diretamente no Firebase
+            db.ref("operacoes").push({
+                data: dataInput,
+                deposito,
+                saque,
+                lucro: saque - deposito
+            });
+
+            document.getElementById('deposito').value = '';
+            document.getElementById('saque').value = '';
+        }
+
+        function carregarDados() {
+            const filtro = document.getElementById('filtroMesAno').value;
+            const corpo = document.getElementById('tabelaCorpo');
+            
+            db.ref("/").once("value", snapshot => {
+                const dados = snapshot.val() || {};
+                const operacoes = Object.keys(dados.operacoes || {}).map(id => dados.operacoes[id]);
+                const pagos = dados.pagos || {};
+                
+                corpo.innerHTML = '';
+                let tMov = 0, tLucro = 0;
+
+                const filtradas = operacoes.filter(op => {
+                    if (filtro === 'todos') return true;
+                    const [ano, mes] = op.data.split('-');
+                    return `${mes}/${ano}` === filtro;
+                }).sort((a,b) => new Date(b.data) - new Date(a.data));
+
+                if(filtradas.length === 0) {
+                    corpo.innerHTML = '<tr><td colspan="4" class="p-10 text-center text-gray-600">Nenhum registro encontrado.</td></tr>';
+                }
+
+                filtradas.forEach(d => {
+                    tMov += (d.deposito + d.saque);
+                    tLucro += d.lucro;
+                    corpo.innerHTML += `
+                        <tr class="hover:bg-gray-700/30 transition">
+                            <td class="p-4 font-mono text-xs text-gray-400">${d.data.split('-').reverse().join('/')}</td>
+                            <td class="p-4 text-center text-red-400">R$ ${d.deposito.toFixed(2)}</td>
+                            <td class="p-4 text-center text-green-400">R$ ${d.saque.toFixed(2)}</td>
+                            <td class="p-4 text-right font-bold ${d.lucro >= 0 ? 'text-white' : 'text-red-500'}">R$ ${d.lucro.toFixed(2)}</td>
+                        </tr>`;
+                });
+
+                const impostoTotal = tLucro > 2826 ? tLucro * 0.15 : 0;
+                const chaveMes = filtro.replace('/', '_');
+                const mesEstaPago = pagos[chaveMes] || false;
+
+                // Lógica visual de imposto
+                if (filtro !== 'todos') {
+                    document.getElementById('areaPagamento').classList.remove('hidden');
+                    const btn = document.getElementById('btnPagarMes');
+                    const status = document.getElementById('statusTexto');
+                    
+                    if (mesEstaPago) {
+                        status.innerText = "Imposto Pago ✓";
+                        status.className = "text-xs font-bold text-green-500 uppercase";
+                        btn.innerText = "ESTORNAR";
+                        btn.className = "bg-green-600/20 text-green-500 border border-green-500 px-4 py-1 rounded text-xs font-bold";
+                        document.getElementById('totalImposto').className = "text-2xl font-bold text-green-500 font-mono";
+                    } else {
+                        status.innerText = "Imposto Pendente";
+                        status.className = "text-xs font-bold text-red-400 uppercase";
+                        btn.innerText = "PAGAR AGORA";
+                        btn.className = "bg-red-600 text-white px-4 py-1 rounded text-xs font-bold";
+                        document.getElementById('totalImposto').className = "text-2xl font-bold text-red-400 font-mono";
+                    }
+                } else {
+                    document.getElementById('areaPagamento').classList.add('hidden');
+                }
+
+                document.getElementById('totalMovimento').innerText = `R$ ${tMov.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('totalLucro').innerText = `R$ ${tLucro.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('totalImposto').innerText = `R$ ${impostoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            });
+        }
+
+        function atualizarFiltros() {
+            db.ref("operacoes").once("value", snapshot => {
+                const operacoes = Object.values(snapshot.val() || {});
+                const select = document.getElementById('filtroMesAno');
+                const mesesAnos = [...new Set(operacoes.map(op => {
+                    const [ano, mes] = op.data.split('-');
+                    return `${mes}/${ano}`;
+                }))].sort().reverse();
+
+                const valorAtual = select.value;
+                select.innerHTML = '<option value="todos">Todos os Meses</option>';
+                mesesAnos.forEach(p => select.innerHTML += `<option value="${p}">${p}</option>`);
+                select.value = valorAtual;
+            });
+        }
+
+        function alternarPagamentoMes() {
+            const filtro = document.getElementById('filtroMesAno').value;
+            if (filtro === 'todos') return;
+            const chave = filtro.replace('/', '_');
+            
+            db.ref(`pagos/${chave}`).once("value", s => {
+                db.ref(`pagos/${chave}`).set(!s.val());
+            });
+        }
+
+        function exportarBackup() {
+            db.ref("/").once("value", s => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(s.val()));
+                const a = document.createElement('a');
+                a.href = dataStr;
+                a.download = `backup_nuvem_banca.json`;
+                a.click();
+            });
+        }
+
+        function limparTudo() {
+            if(confirm("ATENÇÃO: Isso apagará TODOS os dados salvos na nuvem. Confirmar?")) {
+                db.ref("/").remove();
+            }
+        }
+    </script>
+</body>
+</html>
