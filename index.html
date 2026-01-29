@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Banca - Pro Master</title>
+    <title>Gestão de Banca</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -18,17 +18,22 @@
 <body class="bg-gray-900 text-white p-5 font-sans">
 
     <div id="bloqueio">
-        <h1 class="text-3xl font-bold text-green-500 mb-6 uppercase tracking-widest text-center">Gestão de Banca<br><span class="text-sm text-gray-500">Acesso Restrito</span></h1>
+        <h1 class="text-3xl font-bold text-green-500 mb-6 uppercase tracking-widest text-center">Gestão de Banca</h1>
         <input type="password" id="senhaInput" placeholder="PIN">
-        <button onclick="verificarSenha()" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded transition w-48 uppercase text-xs tracking-widest">Entrar</button>
+        <button onclick="verificarSenha()" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded transition uppercase text-xs">Entrar</button>
     </div>
 
     <div id="conteudo" class="max-w-5xl mx-auto">
         <div class="flex flex-wrap justify-between items-center mb-6 border-b border-gray-700 pb-4 gap-4">
-            <h1 class="text-3xl font-bold text-green-500">💰 Minha Banca Cloud</h1>
+            <h1 class="text-3xl font-bold text-green-500">💰 Bem vindo de volta, Fabio</h1>
             <div class="flex items-center gap-2">
-                <button onclick="exportarBackup()" class="text-[10px] bg-blue-900/30 hover:bg-blue-800 text-blue-400 px-3 py-1 rounded border border-blue-800 transition uppercase font-bold">Backup JSON</button>
-                <button onclick="limparTudo()" class="text-[10px] bg-red-900/20 hover:bg-red-900 text-red-400 px-3 py-1 rounded transition uppercase font-bold">Limpar Nuvem</button>
+                <button onclick="exportarBackup()" class="text-[10px] bg-blue-900/30 hover:bg-blue-800 text-blue-400 px-3 py-1 rounded border border-blue-800 transition uppercase font-bold text-center">Exportar PC</button>
+                
+                <label class="text-[10px] bg-purple-900/30 hover:bg-purple-800 text-purple-400 px-3 py-1 rounded border border-purple-800 transition uppercase font-bold cursor-pointer">
+                    Importar PC <input type="file" id="importFile" class="hidden" accept=".json" onchange="importarBackup(event)">
+                </label>
+
+                <button onclick="limparTudo()" class="text-[10px] bg-red-900/20 hover:bg-red-900 text-red-400 px-3 py-1 rounded transition uppercase font-bold">Resetar Nuvem</button>
             </div>
         </div>
 
@@ -38,6 +43,11 @@
                 <select id="filtroMesAno" onchange="carregarDados()" class="bg-gray-700 p-2 rounded outline-none text-white focus:ring-2 ring-blue-500 text-sm">
                     <option value="todos">Todo o Histórico</option>
                 </select>
+            </div>
+
+            <div id="areaPagamento" class="hidden flex items-center gap-4 bg-gray-900/50 p-2 rounded-lg border border-gray-600">
+                <span id="statusTexto" class="text-xs font-bold uppercase"></span>
+                <button id="btnPagarMes" onclick="alternarPagamentoMes()" class="px-4 py-1 rounded text-xs font-bold transition"></button>
             </div>
         </div>
 
@@ -66,7 +76,7 @@
         </div>
 
         <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 shadow-2xl">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full text-left">
                 <thead class="bg-gray-700 text-gray-400 text-[10px] uppercase tracking-widest">
                     <tr>
                         <th class="p-4">Data (Clique p/ Detalhes)</th>
@@ -92,14 +102,14 @@
                 document.getElementById("bloqueio").style.display = "none";
                 document.getElementById("conteudo").style.display = "block";
                 db.ref("/").on("value", () => { atualizarFiltros(); carregarDados(); });
-            } else { alert("ACESSO NEGADO"); }
+            } else { alert("PIN INCORRETO!"); }
         }
 
         function salvarOperacao() {
             const dataInput = document.getElementById('data').value;
             const dep = parseFloat(document.getElementById('deposito').value) || 0;
             const saq = parseFloat(document.getElementById('saque').value) || 0;
-            if(!dataInput) return alert("Data!");
+            if(!dataInput) return alert("Selecione a data!");
             db.ref("operacoes").push({ data: dataInput, deposito: dep, saque: saq, lucro: saq - dep });
             document.getElementById('deposito').value = ''; document.getElementById('saque').value = '';
         }
@@ -107,16 +117,16 @@
         function carregarDados() {
             const filtro = document.getElementById('filtroMesAno').value;
             const corpo = document.getElementById('tabelaCorpo');
+            const areaPagamento = document.getElementById('areaPagamento');
             
-            db.ref("operacoes").once("value", snapshot => {
-                const dados = snapshot.val() || {};
+            db.ref("/").once("value", snapshot => {
+                const globalData = snapshot.val() || {};
+                const operacoes = globalData.operacoes || {};
+                const pagos = globalData.pagos || {};
                 const agrupado = {};
 
-                // Agrupa as operações por dia e guarda a lista de detalhes
-                Object.values(dados).forEach(op => {
-                    if (!agrupado[op.data]) {
-                        agrupado[op.data] = { dep: 0, saq: 0, lucro: 0, detalhes: [] };
-                    }
+                Object.values(operacoes).forEach(op => {
+                    if (!agrupado[op.data]) agrupado[op.data] = { dep: 0, saq: 0, lucro: 0, detalhes: [] };
                     agrupado[op.data].dep += op.deposito;
                     agrupado[op.data].saq += op.saque;
                     agrupado[op.data].lucro += op.lucro;
@@ -134,41 +144,61 @@
 
                 dias.forEach((data, index) => {
                     const d = agrupado[data];
-                    tMov += (d.dep + d.saq);
-                    tLucro += d.lucro;
+                    tMov += (d.dep + d.saq); tLucro += d.lucro;
                     
-                    // Linha Principal (Soma do Dia)
                     corpo.innerHTML += `
                         <tr class="row-dia border-t border-gray-700" onclick="toggleDetalhe(${index})">
                             <td class="p-4 font-mono text-gray-400">📅 ${data.split('-').reverse().join('/')}</td>
                             <td class="p-4 text-center">R$ ${d.dep.toFixed(2)}</td>
                             <td class="p-4 text-center text-blue-300">R$ ${d.saq.toFixed(2)}</td>
-                            <td class="p-4 text-right font-bold ${d.lucro >= 0 ? 'text-green-400' : 'text-red-500'}">
-                                ${d.lucro >= 0 ? '+' : ''} R$ ${d.lucro.toFixed(2)}
-                            </td>
+                            <td class="p-4 text-right font-bold ${d.lucro >= 0 ? 'text-white' : 'text-red-500'}">R$ ${d.lucro.toFixed(2)}</td>
                         </tr>
                         <tr id="detalhe-${index}" class="row-detalhe border-t border-gray-800">
                             <td colspan="4" class="p-4">
-                                <div class="bg-gray-900/50 rounded p-3 border border-gray-700">
-                                    <p class="text-[9px] uppercase text-gray-500 mb-2 font-bold tracking-widest">Histórico Detalhado:</p>
+                                <div class="bg-gray-900/80 rounded p-3 border border-gray-700 shadow-inner">
                                     ${d.detalhes.map((det, i) => `
-                                        <div class="flex justify-between text-xs py-1 border-b border-gray-800 last:border-0">
-                                            <span class="text-gray-400">Op. #${i+1}</span>
+                                        <div class="flex justify-between text-[11px] py-1 border-b border-gray-800 last:border-0">
+                                            <span class="text-gray-500 uppercase">Lançamento ${i+1}</span>
                                             <span class="text-red-400">Dep: R$ ${det.deposito.toFixed(2)}</span>
                                             <span class="text-green-400">Saq: R$ ${det.saque.toFixed(2)}</span>
-                                            <span class="${det.lucro >= 0 ? 'text-white' : 'text-red-600'} font-bold">Saldo: R$ ${det.lucro.toFixed(2)}</span>
-                                        </div>
-                                    `).join('')}
+                                            <span class="font-bold">R$ ${det.lucro.toFixed(2)}</span>
+                                        </div>`).join('')}
                                 </div>
                             </td>
                         </tr>`;
                 });
 
+                // Lógica de Imposto e Botão Pagar
+                const impostoTotal = tLucro > 2826 ? tLucro * 0.15 : 0;
+                const chaveMes = filtro.replace('/', '_');
+                const mesEstaPago = pagos[chaveMes] || false;
+
+                if (filtro !== 'todos') {
+                    areaPagamento.classList.remove('hidden');
+                    const btn = document.getElementById('btnPagarMes');
+                    const status = document.getElementById('statusTexto');
+                    if (mesEstaPago) {
+                        status.innerText = "Imposto Pago"; status.className = "text-xs font-bold text-green-500 uppercase";
+                        btn.innerText = "ESTORNAR"; btn.className = "bg-green-600/20 text-green-500 border border-green-500 px-4 py-1 rounded text-[10px] font-bold";
+                        document.getElementById('totalImposto').className = "text-2xl font-bold text-green-500 font-mono";
+                    } else {
+                        status.innerText = "Imposto Pendente"; status.className = "text-xs font-bold text-red-400 uppercase";
+                        btn.innerText = "MARCAR PAGO"; btn.className = "bg-red-600 text-white px-4 py-1 rounded text-[10px] font-bold";
+                        document.getElementById('totalImposto').className = "text-2xl font-bold text-red-400 font-mono";
+                    }
+                } else { areaPagamento.classList.add('hidden'); }
+
                 document.getElementById('totalMovimento').innerText = `R$ ${tMov.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
                 document.getElementById('totalLucro').innerText = `R$ ${tLucro.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-                const imposto = tLucro > 2826 ? tLucro * 0.15 : 0;
-                document.getElementById('totalImposto').innerText = `R$ ${imposto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('totalImposto').innerText = `R$ ${impostoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             });
+        }
+
+        function alternarPagamentoMes() {
+            const filtro = document.getElementById('filtroMesAno').value;
+            if (filtro === 'todos') return;
+            const chave = filtro.replace('/', '_');
+            db.ref(`pagos/${chave}`).once("value", s => { db.ref(`pagos/${chave}`).set(!s.val()); });
         }
 
         function toggleDetalhe(id) {
@@ -193,13 +223,30 @@
 
         function exportarBackup() {
             db.ref("/").once("value", s => {
-                const a = document.createElement('a');
-                a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(s.val()));
-                a.download = `banca_backup.json`; a.click();
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(s.val()));
+                const a = document.createElement('a'); a.href = dataStr;
+                a.download = `backup_nuvem_banca.json`; a.click();
             });
         }
 
-        function limparTudo() { if(confirm("Apagar tudo da nuvem?")) db.ref("/").remove(); }
+        function importarBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dados = JSON.parse(e.target.result);
+                    if(confirm("Substituir dados da nuvem pelo arquivo?")) {
+                        db.ref("/").set(dados, () => { alert("Backup Restaurado!"); location.reload(); });
+                    }
+                } catch (err) { alert("Arquivo inválido."); }
+            };
+            reader.readAsText(file);
+        }
+
+        function limparTudo() {
+            if(confirm("Apagar TUDO da nuvem?")) db.ref("/").remove();
+        }
     </script>
 </body>
 </html>
