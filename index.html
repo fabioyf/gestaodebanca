@@ -10,88 +10,79 @@
     <style>
         #bloqueio { position: fixed; inset: 0; background: #0a0a0a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
         #conteudo { display: none; }
+        .row-detalhe { background: #111; display: none; }
+        .row-dia:hover { background: rgba(34, 197, 94, 0.05); cursor: pointer; }
         input[type="password"] { background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 8px; text-align: center; outline: none; }
     </style>
 </head>
 <body class="bg-gray-900 text-white p-5 font-sans">
 
     <div id="bloqueio">
-        <h1 class="text-3xl font-bold text-green-500 mb-6 uppercase tracking-widest">Acesso Restrito</h1>
-        <input type="password" id="senhaInput" placeholder="DIGITE SEU PIN">
-        <button onclick="verificarSenha()" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded transition">ENTRAR</button>
+        <h1 class="text-3xl font-bold text-green-500 mb-6 uppercase tracking-widest text-center">Gestão de Banca<br><span class="text-sm text-gray-500">Acesso Restrito</span></h1>
+        <input type="password" id="senhaInput" placeholder="PIN">
+        <button onclick="verificarSenha()" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded transition w-48 uppercase text-xs tracking-widest">Entrar</button>
     </div>
 
     <div id="conteudo" class="max-w-5xl mx-auto">
         <div class="flex flex-wrap justify-between items-center mb-6 border-b border-gray-700 pb-4 gap-4">
-            <h1 class="text-3xl font-bold text-green-500 flex items-center gap-2">💰 Minha Banca Cloud</h1>
+            <h1 class="text-3xl font-bold text-green-500">💰 Minha Banca Cloud</h1>
             <div class="flex items-center gap-2">
-                <button onclick="exportarBackup()" class="text-[10px] bg-blue-900/30 hover:bg-blue-800 text-blue-400 px-3 py-1 rounded border border-blue-800 transition uppercase font-bold">Exportar PC</button>
-                <button onclick="limparTudo()" class="text-[10px] bg-red-900/20 hover:bg-red-900 text-red-400 px-3 py-1 rounded transition uppercase font-bold">Resetar Nuvem</button>
+                <button onclick="exportarBackup()" class="text-[10px] bg-blue-900/30 hover:bg-blue-800 text-blue-400 px-3 py-1 rounded border border-blue-800 transition uppercase font-bold">Backup JSON</button>
+                <button onclick="limparTudo()" class="text-[10px] bg-red-900/20 hover:bg-red-900 text-red-400 px-3 py-1 rounded transition uppercase font-bold">Limpar Nuvem</button>
             </div>
-        </div>
-
-        <div id="resumoMesAtual" class="hidden mb-6 p-4 bg-green-900/10 border border-green-500/30 rounded-lg text-center">
-            <span class="text-gray-400 text-xs uppercase block mb-1">Status do Mês Selecionado</span>
-            <div id="badgeStatusMes" class="text-xl font-bold"></div>
         </div>
 
         <div class="mb-8 bg-gray-800 p-5 rounded-lg flex flex-wrap items-center justify-between gap-4 border border-gray-700 shadow-lg">
             <div class="flex items-center gap-4">
-                <span class="text-gray-400 font-bold uppercase text-xs">Período:</span>
-                <select id="filtroMesAno" onchange="carregarDados()" class="bg-gray-700 p-2 rounded outline-none text-white focus:ring-2 ring-blue-500 cursor-pointer text-sm">
-                    <option value="todos">Todos os Meses</option>
+                <span class="text-gray-400 font-bold uppercase text-xs tracking-widest">Período:</span>
+                <select id="filtroMesAno" onchange="carregarDados()" class="bg-gray-700 p-2 rounded outline-none text-white focus:ring-2 ring-blue-500 text-sm">
+                    <option value="todos">Todo o Histórico</option>
                 </select>
-            </div>
-            <div id="areaPagamento" class="hidden flex items-center gap-4 bg-gray-900/50 p-2 rounded-lg border border-gray-600">
-                <span id="statusTexto" class="text-xs font-bold uppercase"></span>
-                <button id="btnPagarMes" onclick="alternarPagamentoMes()" class="px-4 py-1 rounded text-xs font-bold transition"></button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="bg-gray-800 p-4 rounded-lg shadow border-l-4 border-blue-500">
-                <p class="text-gray-400 text-xs uppercase font-bold tracking-wider">Movimentação Total</p>
+            <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-blue-500 shadow-lg">
+                <p class="text-gray-400 text-[10px] uppercase font-bold">Movimentação</p>
                 <p id="totalMovimento" class="text-2xl font-bold text-blue-400 font-mono">R$ 0,00</p>
             </div>
-            <div class="bg-gray-800 p-4 rounded-lg shadow border-l-4 border-green-500">
-                <p class="text-gray-400 text-xs uppercase font-bold tracking-wider">Lucro Líquido</p>
+            <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-green-500 shadow-lg">
+                <p class="text-gray-400 text-[10px] uppercase font-bold">Lucro Líquido</p>
                 <p id="totalLucro" class="text-2xl font-bold text-green-400 font-mono">R$ 0,00</p>
             </div>
-            <div class="bg-gray-800 p-4 rounded-lg shadow border-l-4 border-red-500">
-                <p id="labelImposto" class="text-gray-400 text-xs uppercase font-bold tracking-wider">Imposto (15%)</p>
+            <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-red-500 shadow-lg">
+                <p id="labelImposto" class="text-gray-400 text-[10px] uppercase font-bold">Imposto (15%)</p>
                 <p id="totalImposto" class="text-2xl font-bold text-red-400 font-mono">R$ 0,00</p>
             </div>
         </div>
 
-        <div class="bg-gray-800 p-6 rounded-lg mb-8 shadow-2xl border border-gray-700">
+        <div class="bg-gray-800 p-6 rounded-lg mb-8 border border-gray-700">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <input type="date" id="data" class="bg-gray-700 p-2 rounded outline-none focus:ring-2 ring-green-500 text-white">
-                <input type="number" id="deposito" placeholder="Depósito (R$)" class="bg-gray-700 p-2 rounded outline-none text-white">
-                <input type="number" id="saque" placeholder="Saque (R$)" class="bg-gray-700 p-2 rounded outline-none text-white">
-                <button onclick="salvarOperacao()" class="bg-green-600 hover:bg-green-700 font-bold py-2 rounded transition shadow-lg text-white uppercase text-sm">Lançar</button>
+                <input type="date" id="data" class="bg-gray-700 p-2 rounded text-white text-sm outline-none">
+                <input type="number" id="deposito" placeholder="Depósito" class="bg-gray-700 p-2 rounded text-white text-sm outline-none">
+                <input type="number" id="saque" placeholder="Saque" class="bg-gray-700 p-2 rounded text-white text-sm outline-none">
+                <button onclick="salvarOperacao()" class="bg-green-600 hover:bg-green-700 font-bold py-2 rounded text-white uppercase text-xs">Lançar</button>
             </div>
         </div>
 
-        <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 shadow-xl">
-            <table class="w-full text-left">
-                <thead class="bg-gray-700 text-gray-400 text-xs uppercase">
+        <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 shadow-2xl">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-700 text-gray-400 text-[10px] uppercase tracking-widest">
                     <tr>
-                        <th class="p-4">Data</th>
-                        <th class="p-4 text-center">Total Depósitos</th>
-                        <th class="p-4 text-center">Total Saques</th>
-                        <th class="p-4 text-right">Resultado do Dia</th>
+                        <th class="p-4">Data (Clique p/ Detalhes)</th>
+                        <th class="p-4 text-center">Depósitos</th>
+                        <th class="p-4 text-center">Saques</th>
+                        <th class="p-4 text-right">Saldo do Dia</th>
                     </tr>
                 </thead>
-                <tbody id="tabelaCorpo" class="divide-y divide-gray-700 text-sm text-white"></tbody>
+                <tbody id="tabelaCorpo" class="text-sm"></tbody>
             </table>
         </div>
     </div>
 
     <script>
         const SENHA_ACESSO = "2323";
-        const firebaseConfig = { 
-            databaseURL: "https://gestaobanca-547df-default-rtdb.firebaseio.com/" 
-        };
+        const firebaseConfig = { databaseURL: "https://gestaobanca-547df-default-rtdb.firebaseio.com/" };
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -100,22 +91,17 @@
             if (document.getElementById("senhaInput").value === SENHA_ACESSO) {
                 document.getElementById("bloqueio").style.display = "none";
                 document.getElementById("conteudo").style.display = "block";
-                db.ref("/").on("value", () => {
-                    atualizarFiltros();
-                    carregarDados();
-                });
-            } else { alert("PIN INCORRETO!"); }
+                db.ref("/").on("value", () => { atualizarFiltros(); carregarDados(); });
+            } else { alert("ACESSO NEGADO"); }
         }
 
         function salvarOperacao() {
             const dataInput = document.getElementById('data').value;
-            const deposito = parseFloat(document.getElementById('deposito').value) || 0;
-            const saque = parseFloat(document.getElementById('saque').value) || 0;
-            if(!dataInput) return alert("Selecione a data!");
-
-            db.ref("operacoes").push({ data: dataInput, deposito, saque, lucro: saque - deposito });
-            document.getElementById('deposito').value = '';
-            document.getElementById('saque').value = '';
+            const dep = parseFloat(document.getElementById('deposito').value) || 0;
+            const saq = parseFloat(document.getElementById('saque').value) || 0;
+            if(!dataInput) return alert("Data!");
+            db.ref("operacoes").push({ data: dataInput, deposito: dep, saque: saq, lucro: saq - dep });
+            document.getElementById('deposito').value = ''; document.getElementById('saque').value = '';
         }
 
         function carregarDados() {
@@ -124,56 +110,70 @@
             
             db.ref("operacoes").once("value", snapshot => {
                 const dados = snapshot.val() || {};
-                const operacoes = Object.values(dados);
-                
-                // --- LÓGICA DE AGRUPAMENTO POR DIA ---
                 const agrupado = {};
-                operacoes.forEach(op => {
-                    const data = op.data;
-                    if (!agrupado[data]) {
-                        agrupado[data] = { deposito: 0, saque: 0, lucro: 0 };
+
+                // Agrupa as operações por dia e guarda a lista de detalhes
+                Object.values(dados).forEach(op => {
+                    if (!agrupado[op.data]) {
+                        agrupado[op.data] = { dep: 0, saq: 0, lucro: 0, detalhes: [] };
                     }
-                    agrupado[data].deposito += op.deposito;
-                    agrupado[data].saque += op.saque;
-                    agrupado[data].lucro += op.lucro;
+                    agrupado[op.data].dep += op.deposito;
+                    agrupado[op.data].saq += op.saque;
+                    agrupado[op.data].lucro += op.lucro;
+                    agrupado[op.data].detalhes.push(op);
                 });
 
                 corpo.innerHTML = '';
                 let tMov = 0, tLucro = 0;
 
-                // Transforma o objeto agrupado em array e filtra pelo mês selecionado
-                const diasFiltrados = Object.keys(agrupado).filter(data => {
+                const dias = Object.keys(agrupado).filter(d => {
                     if (filtro === 'todos') return true;
-                    const [ano, mes] = data.split('-');
+                    const [ano, mes] = d.split('-');
                     return `${mes}/${ano}` === filtro;
                 }).sort((a,b) => new Date(b) - new Date(a));
 
-                diasFiltrados.forEach(data => {
-                    const dia = agrupado[data];
-                    tMov += (dia.deposito + dia.saque);
-                    tLucro += dia.lucro;
+                dias.forEach((data, index) => {
+                    const d = agrupado[data];
+                    tMov += (d.dep + d.saq);
+                    tLucro += d.lucro;
                     
-                    const corResultado = dia.lucro > 0 ? 'text-green-400' : (dia.lucro < 0 ? 'text-red-500' : 'text-gray-400');
-                    const sinal = dia.lucro > 0 ? '+' : '';
-
+                    // Linha Principal (Soma do Dia)
                     corpo.innerHTML += `
-                        <tr class="hover:bg-gray-700/50 transition">
-                            <td class="p-4 font-mono text-gray-400">${data.split('-').reverse().join('/')}</td>
-                            <td class="p-4 text-center">R$ ${dia.deposito.toFixed(2)}</td>
-                            <td class="p-4 text-center text-blue-300">R$ ${dia.saque.toFixed(2)}</td>
-                            <td class="p-4 text-right font-bold ${corResultado}">
-                                <span class="bg-gray-900/50 px-2 py-1 rounded">${sinal} R$ ${dia.lucro.toFixed(2)}</span>
+                        <tr class="row-dia border-t border-gray-700" onclick="toggleDetalhe(${index})">
+                            <td class="p-4 font-mono text-gray-400">📅 ${data.split('-').reverse().join('/')}</td>
+                            <td class="p-4 text-center">R$ ${d.dep.toFixed(2)}</td>
+                            <td class="p-4 text-center text-blue-300">R$ ${d.saq.toFixed(2)}</td>
+                            <td class="p-4 text-right font-bold ${d.lucro >= 0 ? 'text-green-400' : 'text-red-500'}">
+                                ${d.lucro >= 0 ? '+' : ''} R$ ${d.lucro.toFixed(2)}
+                            </td>
+                        </tr>
+                        <tr id="detalhe-${index}" class="row-detalhe border-t border-gray-800">
+                            <td colspan="4" class="p-4">
+                                <div class="bg-gray-900/50 rounded p-3 border border-gray-700">
+                                    <p class="text-[9px] uppercase text-gray-500 mb-2 font-bold tracking-widest">Histórico Detalhado:</p>
+                                    ${d.detalhes.map((det, i) => `
+                                        <div class="flex justify-between text-xs py-1 border-b border-gray-800 last:border-0">
+                                            <span class="text-gray-400">Op. #${i+1}</span>
+                                            <span class="text-red-400">Dep: R$ ${det.deposito.toFixed(2)}</span>
+                                            <span class="text-green-400">Saq: R$ ${det.saque.toFixed(2)}</span>
+                                            <span class="${det.lucro >= 0 ? 'text-white' : 'text-red-600'} font-bold">Saldo: R$ ${det.lucro.toFixed(2)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
                             </td>
                         </tr>`;
                 });
 
-                // Atualiza cards de totais
                 document.getElementById('totalMovimento').innerText = `R$ ${tMov.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
                 document.getElementById('totalLucro').innerText = `R$ ${tLucro.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-                
                 const imposto = tLucro > 2826 ? tLucro * 0.15 : 0;
                 document.getElementById('totalImposto').innerText = `R$ ${imposto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             });
+        }
+
+        function toggleDetalhe(id) {
+            const el = document.getElementById(`detalhe-${id}`);
+            el.style.display = (el.style.display === 'table-row') ? 'none' : 'table-row';
         }
 
         function atualizarFiltros() {
@@ -184,10 +184,10 @@
                     const [ano, mes] = op.data.split('-');
                     return `${mes}/${ano}`;
                 }))].sort().reverse();
-                const valorAtual = select.value;
-                select.innerHTML = '<option value="todos">Todos os Meses</option>';
+                const v = select.value;
+                select.innerHTML = '<option value="todos">Todo o Histórico</option>';
                 mesesAnos.forEach(p => select.innerHTML += `<option value="${p}">${p}</option>`);
-                select.value = valorAtual;
+                select.value = v;
             });
         }
 
@@ -195,14 +195,11 @@
             db.ref("/").once("value", s => {
                 const a = document.createElement('a');
                 a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(s.val()));
-                a.download = `banca_nuvem.json`;
-                a.click();
+                a.download = `banca_backup.json`; a.click();
             });
         }
 
-        function limparTudo() {
-            if(confirm("Apagar todos os dados da nuvem?")) db.ref("/").remove();
-        }
+        function limparTudo() { if(confirm("Apagar tudo da nuvem?")) db.ref("/").remove(); }
     </script>
 </body>
 </html>
