@@ -28,11 +28,9 @@
             <h1 class="text-3xl font-bold text-green-500">💰 Bem vindo de volta, Fabio</h1>
             <div class="flex items-center gap-2">
                 <button onclick="exportarBackup()" class="text-[10px] bg-blue-900/30 hover:bg-blue-800 text-blue-400 px-3 py-1 rounded border border-blue-800 transition uppercase font-bold text-center">Exportar PC</button>
-                
                 <label class="text-[10px] bg-purple-900/30 hover:bg-purple-800 text-purple-400 px-3 py-1 rounded border border-purple-800 transition uppercase font-bold cursor-pointer">
                     Importar PC <input type="file" id="importFile" class="hidden" accept=".json" onchange="importarBackup(event)">
                 </label>
-
                 <button onclick="limparTudo()" class="text-[10px] bg-red-900/20 hover:bg-red-900 text-red-400 px-3 py-1 rounded transition uppercase font-bold">Resetar Nuvem</button>
             </div>
         </div>
@@ -44,14 +42,13 @@
                     <option value="todos">Todo o Histórico</option>
                 </select>
             </div>
-
             <div id="areaPagamento" class="hidden flex items-center gap-4 bg-gray-900/50 p-2 rounded-lg border border-gray-600">
                 <span id="statusTexto" class="text-xs font-bold uppercase"></span>
                 <button id="btnPagarMes" onclick="alternarPagamentoMes()" class="px-4 py-1 rounded text-xs font-bold transition"></button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-blue-500 shadow-lg">
                 <p class="text-gray-400 text-[10px] uppercase font-bold">Movimentação</p>
                 <p id="totalMovimento" class="text-2xl font-bold text-blue-400 font-mono">R$ 0,00</p>
@@ -59,6 +56,10 @@
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-green-500 shadow-lg">
                 <p class="text-gray-400 text-[10px] uppercase font-bold">Lucro Líquido</p>
                 <p id="totalLucro" class="text-2xl font-bold text-green-400 font-mono">R$ 0,00</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-yellow-500 shadow-lg">
+                <p class="text-gray-400 text-[10px] uppercase font-bold text-yellow-500">Saldo p/ Gastar</p>
+                <p id="totalDisponivel" class="text-2xl font-bold text-white font-mono">R$ 0,00</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-red-500 shadow-lg">
                 <p id="labelImposto" class="text-gray-400 text-[10px] uppercase font-bold">Imposto (15%)</p>
@@ -70,7 +71,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <input type="date" id="data" class="bg-gray-700 p-2 rounded text-white text-sm outline-none">
                 <input type="number" id="deposito" placeholder="Depósito" class="bg-gray-700 p-2 rounded text-white text-sm outline-none">
-                <input type="number" id="saque" placeholder="Saque" class="bg-gray-700 p-2 rounded text-white text-sm outline-none">
+                <input type="number" id="saque" placeholder="Saque / Gasto (-)" class="bg-gray-700 p-2 rounded text-white text-sm outline-none">
                 <button onclick="salvarOperacao()" class="bg-green-600 hover:bg-green-700 font-bold py-2 rounded text-white uppercase text-xs">Lançar</button>
             </div>
         </div>
@@ -134,7 +135,7 @@
                 });
 
                 corpo.innerHTML = '';
-                let tMov = 0, tLucro = 0;
+                let tMov = 0, tLucro = 0, tGastos = 0, tSaquesReais = 0;
 
                 const dias = Object.keys(agrupado).filter(d => {
                     if (filtro === 'todos') return true;
@@ -144,7 +145,15 @@
 
                 dias.forEach((data, index) => {
                     const d = agrupado[data];
-                    tMov += (d.dep + d.saq); tLucro += d.lucro;
+                    tMov += (Math.abs(d.dep) + Math.abs(d.saq));
+                    
+                    // Cálculo separado: Saques negativos entram como gastos, saques positivos como lucro real
+                    d.detalhes.forEach(det => {
+                        if(det.saque < 0) tGastos += det.saque;
+                        else tSaquesReais += det.saque;
+                    });
+                    
+                    tLucro += d.lucro;
                     
                     corpo.innerHTML += `
                         <tr class="row-dia border-t border-gray-700" onclick="toggleDetalhe(${index})">
@@ -160,7 +169,7 @@
                                         <div class="flex justify-between text-[11px] py-1 border-b border-gray-800 last:border-0">
                                             <span class="text-gray-500 uppercase">Lançamento ${i+1}</span>
                                             <span class="text-red-400">Dep: R$ ${det.deposito.toFixed(2)}</span>
-                                            <span class="text-green-400">Saq: R$ ${det.saque.toFixed(2)}</span>
+                                            <span class="text-green-400">Saq/Gasto: R$ ${det.saque.toFixed(2)}</span>
                                             <span class="font-bold">R$ ${det.lucro.toFixed(2)}</span>
                                         </div>`).join('')}
                                 </div>
@@ -168,8 +177,14 @@
                         </tr>`;
                 });
 
-                // Lógica de Imposto e Botão Pagar
-                const impostoTotal = tLucro > 2826 ? tLucro * 0.15 : 0;
+                // Lógica de Imposto (Apenas sobre ganhos positivos reais)
+                // O imposto ignora o que você "gastou" para não te prejudicar
+                const lucroParaImposto = tLucro - tGastos; 
+                const impostoTotal = lucroParaImposto > 2826 ? lucroParaImposto * 0.15 : 0;
+                
+                // Saldo disponível = Lucro Líquido Real (que inclui os gastos negativos)
+                const totalDisponivel = tLucro;
+
                 const chaveMes = filtro.replace('/', '_');
                 const mesEstaPago = pagos[chaveMes] || false;
 
@@ -180,16 +195,15 @@
                     if (mesEstaPago) {
                         status.innerText = "Imposto Pago"; status.className = "text-xs font-bold text-green-500 uppercase";
                         btn.innerText = "ESTORNAR"; btn.className = "bg-green-600/20 text-green-500 border border-green-500 px-4 py-1 rounded text-[10px] font-bold";
-                        document.getElementById('totalImposto').className = "text-2xl font-bold text-green-500 font-mono";
                     } else {
                         status.innerText = "Imposto Pendente"; status.className = "text-xs font-bold text-red-400 uppercase";
                         btn.innerText = "MARCAR PAGO"; btn.className = "bg-red-600 text-white px-4 py-1 rounded text-[10px] font-bold";
-                        document.getElementById('totalImposto').className = "text-2xl font-bold text-red-400 font-mono";
                     }
                 } else { areaPagamento.classList.add('hidden'); }
 
                 document.getElementById('totalMovimento').innerText = `R$ ${tMov.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-                document.getElementById('totalLucro').innerText = `R$ ${tLucro.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('totalLucro').innerText = `R$ ${(tLucro - tGastos).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('totalDisponivel').innerText = `R$ ${totalDisponivel.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
                 document.getElementById('totalImposto').innerText = `R$ ${impostoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             });
         }
