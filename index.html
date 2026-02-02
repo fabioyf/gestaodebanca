@@ -11,9 +11,7 @@
         #bloqueio { position: fixed; inset: 0; background: #0a0a0a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
         #conteudo { display: none; }
         .row-detalhe { background: #111; display: none; }
-        .row-dia:hover { background: rgba(34, 197, 94, 0.05); cursor: pointer; }
         input { background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 8px; outline: none; }
-        input[type="password"] { text-align: center; }
     </style>
 </head>
 <body class="bg-gray-900 text-white p-5 font-sans">
@@ -26,7 +24,7 @@
 
     <div id="conteudo" class="max-w-5xl mx-auto">
         <div class="flex flex-wrap justify-between items-center mb-6 border-b border-gray-700 pb-4 gap-4">
-            <h1 class="text-3xl font-bold text-green-500">💰 Fabio - Controle de Bônus</h1>
+            <h1 class="text-3xl font-bold text-green-500">💰 Fabio - Gestão Profissional</h1>
             <div class="flex items-center gap-2">
                 <button onclick="exportarBackup()" class="text-[10px] bg-blue-900/30 hover:bg-blue-800 text-blue-400 px-3 py-1 rounded border border-blue-800 transition uppercase font-bold text-center">Exportar PC</button>
                 <label class="text-[10px] bg-purple-900/30 hover:bg-purple-800 text-purple-400 px-3 py-1 rounded border border-purple-800 transition uppercase font-bold cursor-pointer">
@@ -50,43 +48,38 @@
                 <p id="totalDisponivel" class="text-2xl font-bold text-white font-mono">R$ 0,00</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-red-500 shadow-lg">
-                <p id="labelImposto" class="text-gray-400 text-[10px] uppercase font-bold">Imposto (15%)</p>
+                <p class="text-gray-400 text-[10px] uppercase font-bold">Imposto (15%)</p>
                 <p id="totalImposto" class="text-2xl font-bold text-red-400 font-mono">R$ 0,00</p>
             </div>
         </div>
 
         <div class="bg-gray-800 p-6 rounded-lg mb-8 border-2 border-green-500/30 bg-green-900/5">
-            <h3 class="text-green-500 font-bold uppercase text-xs mb-4 flex items-center gap-2">🧮 Calculadora de Transferência (Baco Boo)</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <h3 class="text-green-500 font-bold uppercase text-xs mb-4">🧮 Calculadora de Operação (Soma de Contas)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="text-[10px] text-gray-400 block mb-1">DEPÓSITO CONTA A</label>
-                    <input type="number" id="calcDepA" placeholder="Ex: 365" class="w-full bg-gray-700 p-2 rounded text-sm">
+                    <label class="text-[10px] text-gray-400 block mb-1">SOMA DE TODOS DEPÓSITOS</label>
+                    <input type="number" id="calcDepTotal" placeholder="Ex: 758" class="w-full bg-gray-700 p-2 rounded text-sm">
                 </div>
                 <div>
-                    <label class="text-[10px] text-gray-400 block mb-1">DEPÓSITO CONTA B (+13)</label>
-                    <input type="number" id="calcDepB" placeholder="Ex: 393" class="w-full bg-gray-700 p-2 rounded text-sm">
-                </div>
-                <div>
-                    <label class="text-[10px] text-gray-400 block mb-1">SAQUE FINAL (PIX)</label>
-                    <input type="number" id="calcSaque" placeholder="Ex: 850" class="w-full bg-gray-700 p-2 rounded text-sm border-green-500/50 border">
+                    <label class="text-[10px] text-gray-400 block mb-1">SOMA DE TODOS SAQUES (PIX)</label>
+                    <input type="number" id="calcSaqueTotal" placeholder="Ex: 1651" class="w-full bg-gray-700 p-2 rounded text-sm border-green-500/50 border">
                 </div>
                 <div class="flex flex-col justify-end">
-                    <button onclick="calcularEstrategia()" class="bg-green-600 hover:bg-green-700 font-bold py-2 rounded text-white uppercase text-xs h-[42px]">Calcular Lucro</button>
+                    <button onclick="calcularSimples()" class="bg-green-600 hover:bg-green-700 font-bold py-2 rounded text-white uppercase text-xs h-[42px]">Calcular Lucro</button>
                 </div>
             </div>
             <div id="resultadoCalc" class="mt-4 p-3 bg-gray-900 rounded hidden border border-gray-700">
                 <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-400">Lucro Real da Operação: <b id="valorLucroCalc" class="text-green-400 ml-2">R$ 0,00</b></span>
-                    <button onclick="enviarParaLancamento()" class="text-[10px] bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded font-bold">USAR ESSES VALORES ABAIXO ↓</button>
+                    <span class="text-sm text-gray-400">Lucro Real: <b id="valorLucroCalc" class="text-green-400 ml-2">R$ 0,00</b></span>
+                    <button onclick="enviarParaLancamento()" class="text-[10px] bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded font-bold uppercase">Copiar para a Tabela ↓</button>
                 </div>
             </div>
         </div>
 
         <div class="bg-gray-800 p-6 rounded-lg mb-8 border border-gray-700 shadow-xl">
-            <h3 class="text-gray-400 font-bold uppercase text-xs mb-4">📝 Registrar na Planilha</h3>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <input type="date" id="data" class="bg-gray-700 p-2 rounded text-white text-sm">
-                <input type="number" id="deposito" placeholder="Depósito Total" step="0.01" class="bg-gray-700 p-2 rounded text-white text-sm">
+                <input type="number" id="deposito" placeholder="Depósito" step="0.01" class="bg-gray-700 p-2 rounded text-white text-sm">
                 <input type="text" id="saque" placeholder="Saque ou Gasto (-)" class="bg-gray-700 p-2 rounded text-white text-sm">
                 <button onclick="salvarOperacao()" class="bg-green-600 hover:bg-green-700 font-bold py-2 rounded text-white uppercase text-xs">Lançar Agora</button>
             </div>
@@ -110,97 +103,81 @@
     <script>
         const SENHA_ACESSO = "2323";
         const firebaseConfig = { databaseURL: "https://gestaobanca-547df-default-rtdb.firebaseio.com/" };
-
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // FUNÇÕES DA CALCULADORA
-        function calcularEstrategia() {
-            const depA = parseFloat(document.getElementById('calcDepA').value) || 0;
-            const depB = parseFloat(document.getElementById('calcDepB').value) || 0;
-            const saque = parseFloat(document.getElementById('calcSaque').value) || 0;
-            const lucro = saque - (depA + depB);
-            
+        function calcularSimples() {
+            const dep = parseFloat(document.getElementById('calcDepTotal').value) || 0;
+            const saq = parseFloat(document.getElementById('calcSaqueTotal').value) || 0;
+            const lucro = saq - dep;
             document.getElementById('resultadoCalc').classList.remove('hidden');
             document.getElementById('valorLucroCalc').innerText = `R$ ${lucro.toFixed(2)}`;
         }
 
         function enviarParaLancamento() {
-            const depA = parseFloat(document.getElementById('calcDepA').value) || 0;
-            const depB = parseFloat(document.getElementById('calcDepB').value) || 0;
-            const saque = parseFloat(document.getElementById('calcSaque').value) || 0;
-            
-            document.getElementById('deposito').value = (depA + depB).toFixed(2);
-            document.getElementById('saque').value = saque.toFixed(2);
-            alert("Valores copiados para o formulário! Agora é só conferir a data e clicar em 'Lançar Agora'.");
+            document.getElementById('deposito').value = document.getElementById('calcDepTotal').value;
+            document.getElementById('saque').value = document.getElementById('calcSaqueTotal').value;
+            alert("Copiado! Confira a data e clique em Lançar Agora.");
         }
 
         function verificarSenha() {
             if (document.getElementById("senhaInput").value === SENHA_ACESSO) {
                 document.getElementById("bloqueio").style.display = "none";
                 document.getElementById("conteudo").style.display = "block";
-                db.ref("/").on("value", () => { atualizarFiltros(); carregarDados(); });
+                db.ref("/").on("value", () => carregarDados());
             } else { alert("PIN INCORRETO!"); }
         }
 
         function salvarOperacao() {
             const dataInput = document.getElementById('data').value;
             const dep = parseFloat(document.getElementById('deposito').value) || 0;
-            const saqueRaw = document.getElementById('saque').value.replace(',', '.');
-            const saq = parseFloat(saqueRaw) || 0;
+            const saq = parseFloat(document.getElementById('saque').value.replace(',', '.')) || 0;
             if(!dataInput) return alert("Selecione a data!");
             db.ref("operacoes").push({ data: dataInput, deposito: dep, saque: saq, lucro: saq - dep });
             document.getElementById('deposito').value = ''; document.getElementById('saque').value = '';
         }
 
         function carregarDados() {
-            const filtro = document.getElementById('filtroMesAno') ? document.getElementById('filtroMesAno').value : 'todos';
             const corpo = document.getElementById('tabelaCorpo');
-            
-            db.ref("/").once("value", snapshot => {
-                const globalData = snapshot.val() || {};
-                const operacoes = globalData.operacoes || {};
+            db.ref("operacoes").once("value", snapshot => {
+                const operacoes = snapshot.val() || {};
                 const agrupado = {};
+                let tMov = 0, tLucroReal = 0, tGastos = 0;
 
                 Object.values(operacoes).forEach(op => {
                     if (!agrupado[op.data]) agrupado[op.data] = { dep: 0, saq: 0, lucro: 0, detalhes: [] };
                     agrupado[op.data].dep += op.deposito;
                     agrupado[op.data].saq += op.saque;
-                    agrupado[op.data].lucro += op.lucro;
+                    agrupado[op.data].lucro += (op.saque - op.deposito);
                     agrupado[op.data].detalhes.push(op);
+                    
+                    tMov += (Math.abs(op.deposito) + Math.abs(op.saque));
+                    if(op.saque < 0) tGastos += Math.abs(op.saque);
+                    tLucroReal += (op.saque > 0 ? op.saque : 0) - op.deposito;
                 });
 
                 corpo.innerHTML = '';
-                let tMov = 0, tLucroReal = 0, tGastos = 0;
-
-                const dias = Object.keys(agrupado).sort((a,b) => new Date(b) - new Date(a));
-
-                dias.forEach((data, index) => {
+                Object.keys(agrupado).sort((a,b) => new Date(b) - new Date(a)).forEach((data, index) => {
                     const d = agrupado[data];
-                    tMov += (Math.abs(d.dep) + Math.abs(d.saq));
-                    d.detalhes.forEach(det => {
-                        if(det.saque < 0) tGastos += Math.abs(det.saque);
-                        tLucroReal += (det.saque > 0 ? det.saque : 0) - det.deposito;
-                    });
-                    
-                    corpo.innerHTML += `<tr class="row-dia border-t border-gray-700" onclick="toggleDetalhe(${index})">
-                        <td class="p-4 font-mono text-gray-400">📅 ${data.split('-').reverse().join('/')}</td>
-                        <td class="p-4 text-center">R$ ${d.dep.toFixed(2)}</td>
-                        <td class="p-4 text-center ${d.saq < 0 ? 'text-yellow-500' : 'text-blue-300'}">R$ ${d.saq.toFixed(2)}</td>
-                        <td class="p-4 text-right font-bold ${d.lucro >= 0 ? 'text-white' : 'text-red-500'}">R$ ${d.lucro.toFixed(2)}</td>
-                    </tr>
-                    <tr id="detalhe-${index}" class="row-detalhe border-t border-gray-800">
-                        <td colspan="4" class="p-4">
-                            <div class="bg-gray-900/80 rounded p-3 border border-gray-700 shadow-inner">
-                                ${d.detalhes.map((det, i) => `<div class="flex justify-between text-[11px] py-1 border-b border-gray-800 last:border-0">
-                                    <span class="text-gray-500 uppercase">Lançamento ${i+1}</span>
-                                    <span class="text-red-400">Dep: R$ ${det.deposito.toFixed(2)}</span>
-                                    <span class="${det.saque < 0 ? 'text-yellow-500' : 'text-green-400'}">S/G: R$ ${det.saque.toFixed(2)}</span>
-                                    <span class="font-bold">R$ ${det.lucro.toFixed(2)}</span>
-                                </div>`).join('')}
-                            </div>
-                        </td>
-                    </tr>`;
+                    corpo.innerHTML += `
+                        <tr class="border-t border-gray-700" onclick="toggleDetalhe(${index})">
+                            <td class="p-4 font-mono text-gray-400">📅 ${data.split('-').reverse().join('/')}</td>
+                            <td class="p-4 text-center">R$ ${d.dep.toFixed(2)}</td>
+                            <td class="p-4 text-center ${d.saq < 0 ? 'text-yellow-500' : 'text-blue-300'}">R$ ${d.saq.toFixed(2)}</td>
+                            <td class="p-4 text-right font-bold ${d.lucro >= 0 ? 'text-white' : 'text-red-500'}">R$ ${d.lucro.toFixed(2)}</td>
+                        </tr>
+                        <tr id="detalhe-${index}" class="row-detalhe border-t border-gray-800">
+                            <td colspan="4" class="p-4">
+                                <div class="bg-gray-900 rounded p-2 border border-gray-700">
+                                    ${d.detalhes.map(det => `<div class="flex justify-between text-[10px] p-1">
+                                        <span class="text-gray-500">OPERAÇÃO</span>
+                                        <span class="text-red-400">Dep: ${det.deposito}</span>
+                                        <span class="${det.saque < 0 ? 'text-yellow-500' : 'text-green-400'}">S/G: ${det.saque}</span>
+                                        <span class="font-bold">L: ${(det.saque - det.deposito).toFixed(2)}</span>
+                                    </div>`).join('')}
+                                </div>
+                            </td>
+                        </tr>`;
                 });
 
                 const impostoTotal = tLucroReal > 2826 ? tLucroReal * 0.15 : 0;
@@ -216,29 +193,20 @@
             el.style.display = (el.style.display === 'table-row') ? 'none' : 'table-row';
         }
 
-        function atualizarFiltros() {
-            // Mantido apenas para evitar erros de referência, pode ser expandido depois.
-        }
-
         function exportarBackup() {
             db.ref("/").once("value", s => {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(s.val()));
-                const a = document.createElement('a'); a.href = dataStr;
-                a.download = `backup_nuvem_fabio.json`; a.click();
+                const a = document.createElement('a');
+                a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(s.val()));
+                a.download = `backup_gestao.json`; a.click();
             });
         }
 
         function importarBackup(event) {
             const file = event.target.files[0];
-            if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const dados = JSON.parse(e.target.result);
-                    if(confirm("Substituir dados da nuvem?")) {
-                        db.ref("/").set(dados, () => { alert("Restaurado!"); location.reload(); });
-                    }
-                } catch (err) { alert("Erro!"); }
+            reader.onload = e => {
+                const dados = JSON.parse(e.target.result);
+                if(confirm("Importar dados?")) db.ref("/").set(dados, () => location.reload());
             };
             reader.readAsText(file);
         }
