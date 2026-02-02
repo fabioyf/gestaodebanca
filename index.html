@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Banca - Fabio</title>
+    <title>Gestão de Banca - Fabio (Oficial)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -11,7 +11,7 @@
         #bloqueio { position: fixed; inset: 0; background: #0a0a0a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
         #conteudo { display: none; }
         .row-detalhe { background: #111; display: none; }
-        input { background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 8px; outline: none; }
+        input, select { background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 8px; outline: none; }
     </style>
 </head>
 <body class="bg-gray-900 text-white p-5 font-sans">
@@ -24,23 +24,21 @@
 
     <div id="conteudo" class="max-w-5xl mx-auto">
         <div class="flex flex-wrap justify-between items-center mb-6 border-b border-gray-700 pb-4 gap-4">
-            <h1 class="text-3xl font-bold text-green-500">💰 Fabio - Gestão Profissional</h1>
+            <h1 class="text-3xl font-bold text-green-500">💰 Fabio - Controle de Imposto</h1>
             <div class="flex items-center gap-2">
+                <select id="filtroMesAno" onchange="carregarDados()" class="text-xs bg-gray-800 border-gray-600"></select>
                 <button onclick="exportarBackup()" class="text-[10px] bg-blue-900/30 hover:bg-blue-800 text-blue-400 px-3 py-1 rounded border border-blue-800 transition uppercase font-bold text-center">Exportar PC</button>
-                <label class="text-[10px] bg-purple-900/30 hover:bg-purple-800 text-purple-400 px-3 py-1 rounded border border-purple-800 transition uppercase font-bold cursor-pointer">
-                    Importar PC <input type="file" id="importFile" class="hidden" accept=".json" onchange="importarBackup(event)">
-                </label>
                 <button onclick="limparTudo()" class="text-[10px] bg-red-900/20 hover:bg-red-900 text-red-400 px-3 py-1 rounded transition uppercase font-bold">Resetar Nuvem</button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-blue-500 shadow-lg">
-                <p class="text-gray-400 text-[10px] uppercase font-bold">Movimentação Total</p>
+                <p class="text-gray-400 text-[10px] uppercase font-bold">Movimentação</p>
                 <p id="totalMovimento" class="text-2xl font-bold text-blue-400 font-mono">R$ 0,00</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-green-500 shadow-lg">
-                <p class="text-gray-400 text-[10px] uppercase font-bold">Lucro Líquido</p>
+                <p class="text-gray-400 text-[10px] uppercase font-bold">Lucro Líquido (Mês)</p>
                 <p id="totalLucro" class="text-2xl font-bold text-green-400 font-mono">R$ 0,00</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-yellow-500 shadow-lg">
@@ -54,25 +52,15 @@
         </div>
 
         <div class="bg-gray-800 p-6 rounded-lg mb-8 border-2 border-green-500/30 bg-green-900/5">
-            <h3 class="text-green-500 font-bold uppercase text-xs mb-4">🧮 Calculadora de Operação (Soma de Contas)</h3>
+            <h3 class="text-green-500 font-bold uppercase text-xs mb-4">🧮 Calculadora de Bônus</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="text-[10px] text-gray-400 block mb-1">SOMA DE TODOS DEPÓSITOS</label>
-                    <input type="number" id="calcDepTotal" placeholder="Ex: 758" class="w-full bg-gray-700 p-2 rounded text-sm">
-                </div>
-                <div>
-                    <label class="text-[10px] text-gray-400 block mb-1">SOMA DE TODOS SAQUES (PIX)</label>
-                    <input type="number" id="calcSaqueTotal" placeholder="Ex: 1651" class="w-full bg-gray-700 p-2 rounded text-sm border-green-500/50 border">
-                </div>
-                <div class="flex flex-col justify-end">
-                    <button onclick="calcularSimples()" class="bg-green-600 hover:bg-green-700 font-bold py-2 rounded text-white uppercase text-xs h-[42px]">Calcular Lucro</button>
-                </div>
+                <input type="number" id="calcDepTotal" placeholder="Soma de Depósitos" class="w-full bg-gray-700 p-2 rounded text-sm">
+                <input type="number" id="calcSaqueTotal" placeholder="Soma de Saques (PIX)" class="w-full bg-gray-700 p-2 rounded text-sm border-green-500/50 border">
+                <button onclick="calcularSimples()" class="bg-green-600 hover:bg-green-700 font-bold py-2 rounded text-white uppercase text-xs">Calcular Lucro</button>
             </div>
-            <div id="resultadoCalc" class="mt-4 p-3 bg-gray-900 rounded hidden border border-gray-700">
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-400">Lucro Real: <b id="valorLucroCalc" class="text-green-400 ml-2">R$ 0,00</b></span>
-                    <button onclick="enviarParaLancamento()" class="text-[10px] bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded font-bold uppercase">Copiar para a Tabela ↓</button>
-                </div>
+            <div id="resultadoCalc" class="mt-4 p-3 bg-gray-900 rounded hidden border border-gray-700 flex justify-between items-center">
+                <span class="text-sm text-gray-400">Lucro Real: <b id="valorLucroCalc" class="text-green-400 ml-2">R$ 0,00</b></span>
+                <button onclick="enviarParaLancamento()" class="text-[10px] bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded font-bold uppercase">Copiar p/ Planilha ↓</button>
             </div>
         </div>
 
@@ -117,14 +105,14 @@
         function enviarParaLancamento() {
             document.getElementById('deposito').value = document.getElementById('calcDepTotal').value;
             document.getElementById('saque').value = document.getElementById('calcSaqueTotal').value;
-            alert("Copiado! Confira a data e clique em Lançar Agora.");
+            alert("Copiado! Clique em Lançar Agora.");
         }
 
         function verificarSenha() {
             if (document.getElementById("senhaInput").value === SENHA_ACESSO) {
                 document.getElementById("bloqueio").style.display = "none";
                 document.getElementById("conteudo").style.display = "block";
-                db.ref("/").on("value", () => carregarDados());
+                db.ref("/").on("value", () => { atualizarFiltros(); carregarDados(); });
             } else { alert("PIN INCORRETO!"); }
         }
 
@@ -137,7 +125,20 @@
             document.getElementById('deposito').value = ''; document.getElementById('saque').value = '';
         }
 
+        function atualizarFiltros() {
+            const select = document.getElementById('filtroMesAno');
+            const valorAtual = select.value;
+            db.ref("operacoes").once("value", s => {
+                const ops = s.val() || {};
+                const meses = [...new Set(Object.values(ops).map(o => o.data.substring(0, 7)))].sort().reverse();
+                select.innerHTML = '<option value="todos">Todos os Meses</option>';
+                meses.forEach(m => { select.innerHTML += `<option value="${m}">${m.split('-').reverse().join('/')}</option>`; });
+                if(valorAtual) select.value = valorAtual;
+            });
+        }
+
         function carregarDados() {
+            const filtro = document.getElementById('filtroMesAno').value;
             const corpo = document.getElementById('tabelaCorpo');
             db.ref("operacoes").once("value", snapshot => {
                 const operacoes = snapshot.val() || {};
@@ -145,6 +146,9 @@
                 let tMov = 0, tLucroReal = 0, tGastos = 0;
 
                 Object.values(operacoes).forEach(op => {
+                    const mesOp = op.data.substring(0, 7);
+                    if (filtro !== 'todos' && mesOp !== filtro) return;
+
                     if (!agrupado[op.data]) agrupado[op.data] = { dep: 0, saq: 0, lucro: 0, detalhes: [] };
                     agrupado[op.data].dep += op.deposito;
                     agrupado[op.data].saq += op.saque;
@@ -160,7 +164,7 @@
                 Object.keys(agrupado).sort((a,b) => new Date(b) - new Date(a)).forEach((data, index) => {
                     const d = agrupado[data];
                     corpo.innerHTML += `
-                        <tr class="border-t border-gray-700" onclick="toggleDetalhe(${index})">
+                        <tr class="border-t border-gray-700 hover:bg-gray-800 cursor-pointer" onclick="toggleDetalhe(${index})">
                             <td class="p-4 font-mono text-gray-400">📅 ${data.split('-').reverse().join('/')}</td>
                             <td class="p-4 text-center">R$ ${d.dep.toFixed(2)}</td>
                             <td class="p-4 text-center ${d.saq < 0 ? 'text-yellow-500' : 'text-blue-300'}">R$ ${d.saq.toFixed(2)}</td>
@@ -169,11 +173,11 @@
                         <tr id="detalhe-${index}" class="row-detalhe border-t border-gray-800">
                             <td colspan="4" class="p-4">
                                 <div class="bg-gray-900 rounded p-2 border border-gray-700">
-                                    ${d.detalhes.map(det => `<div class="flex justify-between text-[10px] p-1">
-                                        <span class="text-gray-500">OPERAÇÃO</span>
-                                        <span class="text-red-400">Dep: ${det.deposito}</span>
-                                        <span class="${det.saque < 0 ? 'text-yellow-500' : 'text-green-400'}">S/G: ${det.saque}</span>
-                                        <span class="font-bold">L: ${(det.saque - det.deposito).toFixed(2)}</span>
+                                    ${d.detalhes.map(det => `<div class="flex justify-between text-[10px] p-1 border-b border-gray-800">
+                                        <span class="text-gray-500 uppercase">Item</span>
+                                        <span class="text-red-400">Dep: ${det.deposito.toFixed(2)}</span>
+                                        <span class="${det.saque < 0 ? 'text-yellow-500' : 'text-green-400'}">S/G: ${det.saque.toFixed(2)}</span>
+                                        <span class="font-bold">Saldo: ${(det.saque - det.deposito).toFixed(2)}</span>
                                     </div>`).join('')}
                                 </div>
                             </td>
@@ -197,18 +201,8 @@
             db.ref("/").once("value", s => {
                 const a = document.createElement('a');
                 a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(s.val()));
-                a.download = `backup_gestao.json`; a.click();
+                a.download = `backup_gestao_fabio.json`; a.click();
             });
-        }
-
-        function importarBackup(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = e => {
-                const dados = JSON.parse(e.target.result);
-                if(confirm("Importar dados?")) db.ref("/").set(dados, () => location.reload());
-            };
-            reader.readAsText(file);
         }
 
         function limparTudo() { if(confirm("Apagar TUDO?")) db.ref("/").remove(); }
