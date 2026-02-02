@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Banca - Fabio (Oficial)</title>
+    <title>Gestão de Banca</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -24,7 +24,7 @@
 
     <div id="conteudo" class="max-w-5xl mx-auto">
         <div class="flex flex-wrap justify-between items-center mb-6 border-b border-gray-700 pb-4 gap-4">
-            <h1 class="text-3xl font-bold text-green-500">💰 Fabio - Controle de Imposto</h1>
+            <h1 class="text-3xl font-bold text-green-500">💰 Bem vindo de volta, Fabio</h1>
             <div class="flex items-center gap-2">
                 <select id="filtroMesAno" onchange="carregarDados()" class="text-xs bg-gray-800 border-gray-600"></select>
                 <button onclick="exportarBackup()" class="text-[10px] bg-blue-900/30 hover:bg-blue-800 text-blue-400 px-3 py-1 rounded border border-blue-800 transition uppercase font-bold text-center">Exportar PC</button>
@@ -34,11 +34,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-blue-500 shadow-lg">
-                <p class="text-gray-400 text-[10px] uppercase font-bold">Movimentação</p>
+                <p class="text-gray-400 text-[10px] uppercase font-bold">Movimentação Período</p>
                 <p id="totalMovimento" class="text-2xl font-bold text-blue-400 font-mono">R$ 0,00</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-green-500 shadow-lg">
-                <p class="text-gray-400 text-[10px] uppercase font-bold">Lucro Líquido (Mês)</p>
+                <p class="text-gray-400 text-[10px] uppercase font-bold">Lucro Líquido</p>
                 <p id="totalLucro" class="text-2xl font-bold text-green-400 font-mono">R$ 0,00</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-yellow-500 shadow-lg">
@@ -46,7 +46,7 @@
                 <p id="totalDisponivel" class="text-2xl font-bold text-white font-mono">R$ 0,00</p>
             </div>
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-red-500 shadow-lg">
-                <p class="text-gray-400 text-[10px] uppercase font-bold">Imposto (15%)</p>
+                <p class="text-gray-400 text-[10px] uppercase font-bold">Imposto Estimado (15%)</p>
                 <p id="totalImposto" class="text-2xl font-bold text-red-400 font-mono">R$ 0,00</p>
             </div>
         </div>
@@ -105,7 +105,7 @@
         function enviarParaLancamento() {
             document.getElementById('deposito').value = document.getElementById('calcDepTotal').value;
             document.getElementById('saque').value = document.getElementById('calcSaqueTotal').value;
-            alert("Copiado! Clique em Lançar Agora.");
+            alert("Copiado! Confira a data e clique em Lançar Agora.");
         }
 
         function verificarSenha() {
@@ -125,6 +125,12 @@
             document.getElementById('deposito').value = ''; document.getElementById('saque').value = '';
         }
 
+        function deletarOperacao(id) {
+            if(confirm("Deseja apagar este lançamento permanentemente?")) {
+                db.ref("operacoes/" + id).remove();
+            }
+        }
+
         function atualizarFiltros() {
             const select = document.getElementById('filtroMesAno');
             const valorAtual = select.value;
@@ -133,7 +139,7 @@
                 const meses = [...new Set(Object.values(ops).map(o => o.data.substring(0, 7)))].sort().reverse();
                 select.innerHTML = '<option value="todos">Todos os Meses</option>';
                 meses.forEach(m => { select.innerHTML += `<option value="${m}">${m.split('-').reverse().join('/')}</option>`; });
-                if(valorAtual) select.value = valorAtual;
+                if(valorAtual && [...select.options].some(opt => opt.value === valorAtual)) select.value = valorAtual;
             });
         }
 
@@ -145,19 +151,24 @@
                 const agrupado = {};
                 let tMov = 0, tLucroReal = 0, tGastos = 0;
 
-                Object.values(operacoes).forEach(op => {
+                Object.keys(operacoes).forEach(key => {
+                    const op = operacoes[key];
                     const mesOp = op.data.substring(0, 7);
+                    
                     if (filtro !== 'todos' && mesOp !== filtro) return;
 
                     if (!agrupado[op.data]) agrupado[op.data] = { dep: 0, saq: 0, lucro: 0, detalhes: [] };
                     agrupado[op.data].dep += op.deposito;
                     agrupado[op.data].saq += op.saque;
                     agrupado[op.data].lucro += (op.saque - op.deposito);
-                    agrupado[op.data].detalhes.push(op);
+                    agrupado[op.data].detalhes.push({ ...op, id: key });
                     
                     tMov += (Math.abs(op.deposito) + Math.abs(op.saque));
                     if(op.saque < 0) tGastos += Math.abs(op.saque);
-                    tLucroReal += (op.saque > 0 ? op.saque : 0) - op.deposito;
+                    // O imposto deve ser calculado apenas sobre lucros reais (saque > deposito)
+                    if (op.saque > op.deposito) {
+                        tLucroReal += (op.saque - op.deposito);
+                    }
                 });
 
                 corpo.innerHTML = '';
@@ -173,18 +184,20 @@
                         <tr id="detalhe-${index}" class="row-detalhe border-t border-gray-800">
                             <td colspan="4" class="p-4">
                                 <div class="bg-gray-900 rounded p-2 border border-gray-700">
-                                    ${d.detalhes.map(det => `<div class="flex justify-between text-[10px] p-1 border-b border-gray-800">
-                                        <span class="text-gray-500 uppercase">Item</span>
-                                        <span class="text-red-400">Dep: ${det.deposito.toFixed(2)}</span>
-                                        <span class="${det.saque < 0 ? 'text-yellow-500' : 'text-green-400'}">S/G: ${det.saque.toFixed(2)}</span>
-                                        <span class="font-bold">Saldo: ${(det.saque - det.deposito).toFixed(2)}</span>
+                                    ${d.detalhes.map(det => `<div class="flex justify-between items-center text-[10px] p-2 border-b border-gray-800 last:border-0">
+                                        <span class="text-red-400">Dep: R$ ${det.deposito.toFixed(2)}</span>
+                                        <span class="${det.saque < 0 ? 'text-yellow-500' : 'text-green-400'}">S/G: R$ ${det.saque.toFixed(2)}</span>
+                                        <span class="font-bold">Saldo: R$ ${(det.saque - det.deposito).toFixed(2)}</span>
+                                        <button onclick="event.stopPropagation(); deletarOperacao('${det.id}')" class="text-red-600 hover:text-red-400 font-bold ml-2">🗑️</button>
                                     </div>`).join('')}
                                 </div>
                             </td>
                         </tr>`;
                 });
 
+                // LÓGICA DE IMPOSTO: Isenção abaixo de 2826 reais no período filtrado
                 const impostoTotal = tLucroReal > 2826 ? tLucroReal * 0.15 : 0;
+                
                 document.getElementById('totalMovimento').innerText = `R$ ${tMov.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
                 document.getElementById('totalLucro').innerText = `R$ ${tLucroReal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
                 document.getElementById('totalDisponivel').innerText = `R$ ${(tLucroReal - tGastos).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
@@ -205,7 +218,7 @@
             });
         }
 
-        function limparTudo() { if(confirm("Apagar TUDO?")) db.ref("/").remove(); }
+        function limparTudo() { if(confirm("CUIDADO: Isso apaga todos os seus dados da nuvem. Deseja continuar?")) db.ref("/").remove(); }
     </script>
 </body>
 </html>
