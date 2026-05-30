@@ -28,6 +28,10 @@
             <div class="flex items-center gap-2">
                 <select id="filtroMesAno" onchange="carregarDados()" class="text-xs bg-gray-800 border-gray-600"></select>
                 <button onclick="exportarBackup()" class="text-[10px] bg-blue-900/30 hover:bg-blue-800 text-blue-400 px-3 py-1 rounded border border-blue-800 transition uppercase font-bold text-center">Exportar PC</button>
+                
+                <label for="importarArquivo" class="text-[10px] bg-yellow-900/30 hover:bg-yellow-800 text-yellow-400 px-3 py-1 rounded border border-yellow-800 transition uppercase font-bold text-center cursor-pointer mb-0">Importar JSON</label>
+                <input type="file" id="importarArquivo" accept=".json" class="hidden" onchange="importarBackup(event)">
+                
                 <button onclick="limparTudo()" class="text-[10px] bg-red-900/20 hover:bg-red-900 text-red-400 px-3 py-1 rounded transition uppercase font-bold">Resetar Nuvem</button>
             </div>
         </div>
@@ -217,6 +221,29 @@
                 a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(s.val()));
                 a.download = `backup_gestao_fabio.json`; a.click();
             });
+        }
+        
+        // Nova função de Importação de JSON
+        function importarBackup(event) {
+            const arquivo = event.target.files[0];
+            if (!arquivo) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dados = JSON.parse(e.target.result);
+                    if (confirm("ATENÇÃO: Importar este backup vai APAGAR e SUBSTITUIR todos os dados atuais na nuvem. Deseja continuar?")) {
+                        db.ref("/").set(dados)
+                            .then(() => alert("Backup importado com sucesso! Os dados já foram atualizados."))
+                            .catch((erro) => alert("Erro ao importar para a nuvem: " + erro.message));
+                    }
+                } catch (erro) {
+                    alert("Erro ao ler o arquivo. Certifique-se de que é um JSON de backup válido.");
+                }
+                // Limpa o campo para permitir selecionar o mesmo arquivo novamente, se necessário
+                event.target.value = '';
+            };
+            reader.readAsText(arquivo);
         }
 
         function limparTudo() { if(confirm("Apagar TUDO da nuvem?")) db.ref("/").remove(); }
